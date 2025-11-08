@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dictée MAF – Annuaire CHU Nîmes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+            background-color: white;
+            padding: 8px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin: 8px 0;
+            font-size: 16px;
+        }
+        h2 {
+            color: #3498db;
+            font-size: 14px;
+            margin: 8px 0 4px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 2px;
+        }
+        textarea {
+            width: 100%;
+            height: 60px;
+            margin: 4px 0;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: none;
+            box-sizing: border-box;
+            font-size: 13px;
+        }
+        button {
+            border: none;
+            padding: 8px;
+            width: 100%;
+            margin: 3px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+        button.active {
+            filter: brightness(1.2);
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+        }
+        #startDictation {
+            background-color: #3498db;
+            color: white;
+        }
+        #generateWord {
+            background-color: #27ae60;
+            color: white;
+            margin-bottom: 8px;
+        }
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px;
+            margin-top: 6px;
+        }
+        #reorientationIntraCHU, #reorientationAmbulatoire {
+            background-color: #8a2be2;
+            color: white;
+        }
+        #fastTrackDechocage {
+            background-color: #ff0000;
+            color: white;
+        }
+        #appelMedecinCHU, #appelMedecinTraitant {
+            background-color: #32cd32;
+            color: white;
+        }
+        #prescriptionImagerie, #prescriptionAnticipee {
+            background-color: #ff8c00;
+            color: white;
+        }
+        #structuredText {
+            width: 100%;
+            height: 140px;
+            font-family: monospace;
+            background-color: #f0f0f0;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            resize: none;
+            font-size: 12px;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+            margin-bottom: 6px;
+        }
+        .status {
+            color: #e74c3c;
+            font-size: 11px;
+            text-align: center;
+            margin: 4px 0;
+            display: none;
+        }
+        .phone-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .phone-modal-content {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 300px;
+        }
+        .phone-modal h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .phone-modal input {
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .phone-modal button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 4px;
+        }
+        .phone-options {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 8px 0;
+        }
+        .phone-option {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .phone-option:last-child {
+            border-bottom: none;
+        }
+        .external-number {
+            color: #3498db;
+            font-weight: bold;
+        }
+        .internal-number {
+            color: #666;
+            font-style: italic;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dictée MAF</h1>
+
+        <!-- Champ de saisie -->
+        <div class="input-section">
+            <button id="startDictation"><i class="fas fa-microphone"></i> Dictée Unique</button>
+            <div id="statusDictation" class="status"></div>
+            <textarea id="dictationText" placeholder="Dictez ici..."></textarea>
+            <button id="generateWord"><i class="fas fa-file-medical"></i> Génère le Mot</button>
+        </div>
+
+        <!-- Texte structuré -->
+        <div class="output-section">
+            <h2>Mot Structuré</h2>
+            <textarea id="structuredText" readonly></textarea>
+
+            <!-- Boutons colorés -->
+            <div class="action-buttons">
+                <button id="reorientationIntraCHU">Réorientation Intra-CHU</button>
+                <button id="reorientationAmbulatoire">Réorientation Ambulatoire</button>
+                <button id="fastTrackDechocage">FAST TRACK Déchocage</button>
+                <button id="appelMedecinCHU"><i class="fas fa-phone"></i> Médecin CHU</button>
+                <button id="appelMedecinTraitant"><i class="fas fa-phone"></i> Médecin Traitant</button>
+                <button id="prescriptionImagerie">Prescription Imagerie</button>
+                <button id="prescriptionAnticipee">Prescription Anticipée</button>
+            </div>
+        </div>
+
+        <!-- Modal pour saisie de numéro -->
+        <div id="phoneModal" class="phone-modal">
+            <div class="phone-modal-content">
+                <h3 id="phoneModalTitle">Appeler un médecin</h3>
+                <input type="tel" id="phoneNumberInput" placeholder="Numéro de téléphone">
+                <div id="phoneOptions" class="phone-options" style="display: none;">
+                    <!-- Options générées dynamiquement -->
+                </div>
+                <button id="callButton">Appeler</button>
+                <button id="closeModal" style="background-color: #e74c3c;">Fermer</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+    <script>
+        // Annuaire CHU Nîmes (extrait des données fournies)
+        const annuaireCHU = [
+            { name: "Réanimation Chirurgicale", external: "0646096006", internal: "83317 / 88419" },
+            { name: "Réanimation Médicale", external: "0646096005", internal: "84135 / 84136" },
+            { name: "Cardiologie (interne)", external: "0786438245", internal: "*3897" },
+            { name: "Neurochirurgie", external: "0618032022", internal: "*3827" },
+            { name: "Neurologie", external: "0607355846", internal: "*3681" }
+        ];
+
+        // Fonction pour démarrer la dictée
+        function startDictation() {
+            const statusElement = document.getElementById('statusDictation');
+            statusElement.style.display = 'none';
+
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                statusElement.textContent = "Utilisez Chrome/Edge pour la dictée.";
+                statusElement.style.display = 'block';
+                return;
+            }
+
+            const recognition = new (window.webkitSpeechRecognition || window.SpeechRecognition)();
+            recognition.lang = 'fr-FR';
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                statusElement.textContent = "Dictée en cours...";
+                statusElement.style.display = 'block';
+                statusElement.style.color = "#3498db";
+            };
+
+            recognition.onresult = (event) => {
+                document.getElementById('dictationText').value = event.results[0][0].transcript;
+                statusElement.textContent = "Dictée terminée.";
+                statusElement.style.color = "#27ae60";
+            };
+
+            recognition.onerror = (event) => {
+                statusElement.textContent = `Erreur: ${event.error}`;
+                statusElement.style.color = "#e74c3c";
+                statusElement.style.display = 'block';
+            };
+
+            recognition.start();
+        }
+
+        // Génération du mot structuré
+        function generateStructuredWord() {
+            const now = new Date();
+            const date = now.toLocaleDateString('fr-FR');
+            const time = now.toLocaleTimeString('fr-FR');
+            const doctorName = "Dr. Sylvain Benenati";
+            const rawText = document.getElementById('dictationText').value.trim();
+
+            if (!rawText) {
+                alert("Veuillez dicter du texte avant de générer.");
+                return;
+            }
+
+            const structuredWord = `
+**Médecin Référent MAF** : ${doctorName}
+**Date/Heure** : ${date} ${time}
+
+${rawText.substring(0, 200)}...
+            `.trim();
+
+            document.getElementById('structuredText').value = structuredWord;
+        }
+
+        // Gestion des boutons
+        document.querySelectorAll('.action-buttons button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.action-buttons button').forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+
+                if (button.id === 'appelMedecinCHU') {
+                    showPhoneModal("Médecin CHU", true);
+                } else if (button.id === 'appelMedecinTraitant') {
+                    showPhoneModal("Médecin Traitant", false);
+                }
+            });
+        });
+
+        // Affichage du modal téléphone
+        function showPhoneModal(title, isCHU) {
+            const modal = document.getElementById('phoneModal');
+            const modalTitle = document.getElementById('phoneModalTitle');
+            const phoneOptions = document.getElementById('phoneOptions');
+
+            modalTitle.textContent = title;
+            phoneOptions.style.display = isCHU ? 'block' : 'none';
+
+            if (isCHU) {
+                phoneOptions.innerHTML = '';
+                annuaireCHU.forEach(item => {
+                    const option = document.createElement('div');
+                    option.className = 'phone-option';
+                    option.innerHTML = `
+                        <strong>${item.name}</strong><br>
+                        <span class="external-number">${item.external}</span>
+                        <span class="internal-number">(Interne: ${item.internal})</span>
+                    `;
+                    option.onclick = () => {
+                        document.getElementById('phoneNumberInput').value = item.external;
+                    };
+                    phoneOptions.appendChild(option);
+                });
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        // Appel téléphonique
+        document.getElementById('callButton').addEventListener('click', () => {
+            const phoneNumber = document.getElementById('phoneNumberInput').value;
+            if (phoneNumber) {
+                window.location.href = `tel:${phoneNumber}`;
+            } else {
+                alert("Veuillez saisir un numéro.");
+            }
+        });
+
+        // Fermeture du modal
+        document.getElementById('closeModal').addEventListener('click', () => {
+            document.getElementById('phoneModal').style.display = 'none';
+        });
+
+        // Événements principaux
+        document.getElementById('startDictation').addEventListener('click', startDictation);
+        document.getElementById('generateWord').addEventListener('click', generateStructuredWord);
+        document.getElementById('structuredText').addEventListener('click', () => {
+            navigator.clipboard.writeText(document.getElementById('structuredText').value)
+                .then(() => alert("Mot copié !"))
+                .catch(err => alert("Erreur: " + err));
+        });
+    </script>
+</body>
+</html>
